@@ -9,9 +9,6 @@ function generate_custom_Hamiltonian(hl::HamiltonianLearner, coeff_list::Union{V
         coeff_list = copy(hl.coeff_list)
     end
 
-    num_ops = 24
-    @assert length(coeff_list) == num_ops "Current implementation assumes $(num_ops) Hamiltonian terms" 
-
     ind_op = 1
     #single Pauli term
     for j in 1:N
@@ -31,7 +28,6 @@ function generate_custom_Hamiltonian(hl::HamiltonianLearner, coeff_list::Union{V
         ind_op += 5
     end
     
-
     #three-body Pauli terms
     for l1 in 1:(range - 1)
         for l2 in (l1 + 1):range
@@ -50,18 +46,18 @@ function generate_custom_Hamiltonian(hl::HamiltonianLearner, coeff_list::Union{V
 
                 H .+= 8.0 * coeff_list[ind_op + 9], "Sx", j, "Sy", j + l1, "Sy", j + l2
                 H .+= 8.0 * coeff_list[ind_op + 10], "Sx", j, "Sz", j + l1, "Sz", j + l2
-                H .+= 8.0 * coeff_list[ind_op + 11], "Sx", j, "Sz", j + l1, "Sz", j + l2
-                H .+= 8.0 * coeff_list[ind_op + 12], "Sx", j, "Sy", j + l1, "Sy", j + l2
+                H .+= 8.0 * coeff_list[ind_op + 11], "Sx", j, "Sy", j + l1, "Sz", j + l2
+                H .+= 8.0 * coeff_list[ind_op + 12], "Sx", j, "Sz", j + l1, "Sy", j + l2
             end
             ind_op += 13
         end
     end
 
-    @assert ind_op == (num_ops + 1) "Mismatch in counting operators"
     return H
 end
 
-function generate_Hamiltonian(hl::HamiltonianLearner, coeff_list::Union{Vector{Float64}, Nothing}=nothing, flag_diag=true, maxdim=[10, 20, 100, 100, 200])
+
+function generate_Hamiltonian(hl::HamiltonianLearner, coeff_list::Union{Vector{Float64}, Nothing}=nothing, flag_diag=true)
     if isnothing(coeff_list)
         coeff_list = copy(hl.coeff_list)
     end
@@ -69,7 +65,7 @@ function generate_Hamiltonian(hl::HamiltonianLearner, coeff_list::Union{Vector{F
     @assert length(coeff_list) == length(hl.op_list) "Number of operators and coefficients are inconsistent"
 
     H = generate_custom_Hamiltonian(hl, coeff_list)
-    hl.H = MPO(H, hl.sites)
+    hl.H = copy(MPO(H, hl.sites))
 
     if flag_diag
         psi0 = deepcopy(hl.psi)#randomMPS(hl.sites, linkdims=10)
@@ -116,16 +112,15 @@ end
 function find_optimal_eigenvec(V::Vector{Vector{Float64}})
     d = length(V)
 
-    # Define custom weights for penalizing terms
     custom_weights = [0.0; 
                          ones(Float64, 5);#2-Pauli nn
                          4.0 * ones(Float64, 5); #2-Pauli nnn
                          4.0 * ones(Float64, 5); #3-Pauli
-                         8.0 * ones(Float64, 8)] #3-Pauli skewed
+                         8.0 * ones(Float64, 8)  #3-Pauli skewed
+                         ] 
     custom_weights[4] = 0.5  # prefer ZZ
     custom_weights[14] = 1.5  # prefer ZXZ
 
-    # Combine V[i] with weights x[i] to get vector in degenerate subspace
     function get_vec(x)
         v = zero(V[1])
         for i in 1:d
@@ -140,7 +135,6 @@ function find_optimal_eigenvec(V::Vector{Vector{Float64}})
         return sum((v .^ 2) .* custom_weights)
     end
 
-    # Initial guess
     x0 = ones(Float64, length(V))
 
     result = optimize(cost_vec, x0, NelderMead())
@@ -166,7 +160,7 @@ function LearnHamiltonian_corr_mat(hl::HamiltonianLearner)
     end
 
     if length(V) == 1
-        v_min = V[1]
+        v_min = V[1] / norm(V[1])
     else
         v_min = find_optimal_eigenvec(V)
     end
@@ -174,7 +168,7 @@ function LearnHamiltonian_corr_mat(hl::HamiltonianLearner)
     H = generate_custom_Hamiltonian(hl, v_min)
 
     E_psi = real(inner(hl.psi', MPO(H, hl.sites), hl.psi))
-    if  E_psi> 0
+    if  E_psi > 0
         v_min = -v_min
         E_psi = -E_psi
     end

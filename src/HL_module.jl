@@ -100,8 +100,8 @@ function generate_custom_op_list(sites::IndexSet, range::Int)
 
                 op_XYY .+= 8.0, "Sx", j, "Sy", j + l1, "Sy", j + l2
                 op_XZZ .+= 8.0, "Sx", j, "Sz", j + l1, "Sz", j + l2
-                op_XYZ .+= 8.0, "Sx", j, "Sz", j + l1, "Sz", j + l2
-                op_XZY .+= 8.0, "Sx", j, "Sy", j + l1, "Sy", j + l2
+                op_XYZ .+= 8.0, "Sx", j, "Sy", j + l1, "Sz", j + l2
+                op_XZY .+= 8.0, "Sx", j, "Sz", j + l1, "Sy", j + l2
             end
             push!(op_list, op_XXX)
 
@@ -121,7 +121,6 @@ function generate_custom_op_list(sites::IndexSet, range::Int)
             push!(op_list, op_XZY)
         end
     end
-
     return op_list
 end
 
@@ -143,7 +142,7 @@ function HamiltonianLearner(psi::MPS, range::Int=2,
     H = MPO()
     ψ_GS = MPS()    
 
-    return HamiltonianLearner(N, sites, psi, coeff_list, op_list, range, method, G_mat, H,  ψ_GS, 0.0, 0.0, 0.0, 1.0)
+    return HamiltonianLearner(N, sites, copy(psi), coeff_list, op_list, range, method, G_mat, H, ψ_GS, 0.0, 0.0, 0.0, 1.0)
 end
 
 include("HL1D_utils.jl")
