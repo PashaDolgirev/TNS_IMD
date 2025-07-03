@@ -87,7 +87,8 @@ function optimize_fidelity(qr::QuantumResource1D,
     max_iter=1000, 
     circuit::Union{Symbol, Nothing}=nothing
     )
-    
+    Random.seed!(123)
+
     function objective(p)
         psi = apply_ladder_circuit(qr, p)
         cost = -abs2(inner(psi, Psi))
