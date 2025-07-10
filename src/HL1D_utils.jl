@@ -9,46 +9,35 @@ function generate_custom_Hamiltonian(hl::HamiltonianLearner, coeff_list::Union{V
         coeff_list = copy(hl.coeff_list)
     end
 
-    ind_op = 1
-    #single Pauli term
-    for j in 1:N
-        H .+= 2.0 * coeff_list[ind_op], "Sx", j
+    for j in 1:(N - 1)
+        H .+= 4.0 * coeff_list[1], "Sz", j, "Sz", j + 1
     end
-    ind_op += 1
+
+    for j in 1:(N - 2)
+        H .+= 8.0 * coeff_list[2], "Sz", j, "Sx", j + 1, "Sz", j + 2
+    end
+    H .+= 4.0 * coeff_list[2], "Sx", 1, "Sz", 2
+    H .+= 4.0 * coeff_list[2], "Sz", N - 1, "Sx", N
+
+    ind_op = 3
+
 
     #two-body Pauli terms
     for j in 1:(N - 1)
         H .+= 4.0 * coeff_list[ind_op], "Sx", j, "Sx", j + 1
         H .+= 4.0 * coeff_list[ind_op + 1], "Sy", j, "Sy", j + 1
-        H .+= 4.0 * coeff_list[ind_op + 2], "Sz", j, "Sz", j + 1
-        H .+= 4.0 * coeff_list[ind_op + 3], "Sy", j, "Sz", j + 1
-        H .+= 4.0 * coeff_list[ind_op + 4], "Sz", j, "Sy", j + 1
     end
-    ind_op += 5
+    ind_op += 2
     
     #three-body Pauli terms
     #bulk terms
     for j in 1:(N - 2)
         H .+= 8.0 * coeff_list[ind_op], "Sx", j, "Sx", j + 1, "Sx", j + 2
         H .+= 8.0 * coeff_list[ind_op + 1], "Sy", j, "Sx", j + 1, "Sy", j + 2
-        H .+= 8.0 * coeff_list[ind_op + 2], "Sz", j, "Sx", j + 1, "Sz", j + 2
-        H .+= 8.0 * coeff_list[ind_op + 3], "Sy", j, "Sx", j + 1, "Sz", j + 2
-        H .+= 8.0 * coeff_list[ind_op + 4], "Sz", j, "Sx", j + 1, "Sy", j + 2
     end
-    #corresponding boundary terms
-    # H .+= 4.0 * coeff_list[ind_op], "Sx", 1, "Sx", 2
-    # H .+= 4.0 * coeff_list[ind_op], "Sx", N - 1, "Sx", N
-    # H .+= 4.0 * coeff_list[ind_op + 1], "Sx", 1, "Sy", 2
-    # H .+= 4.0 * coeff_list[ind_op + 1], "Sy", N - 1, "Sx", N
-    # H .+= 4.0 * coeff_list[ind_op + 2], "Sx", 1, "Sz", 2
-    # H .+= 4.0 * coeff_list[ind_op + 2], "Sz", N - 1, "Sx", N
-    # H .+= 4.0 * coeff_list[ind_op + 3], "Sx", 1, "Sz", 2
-    # H .+= 4.0 * coeff_list[ind_op + 3], "Sy", N - 1, "Sx", N
-    # H .+= 4.0 * coeff_list[ind_op + 4], "Sx", 1, "Sy", 2
-    # H .+= 4.0 * coeff_list[ind_op + 4], "Sz", N - 1, "Sx", N
-    ind_op += 5
+    ind_op += 2
 
-    #boundary terms - single Pauli
+    # #boundary terms - single Pauli
     H .+= 2.0 * coeff_list[ind_op], "Sx", 1
     H .+= 2.0 * coeff_list[ind_op + 1], "Sx", N
     H .+= 2.0 * coeff_list[ind_op + 2], "Sy", 1
@@ -79,8 +68,150 @@ function generate_custom_Hamiltonian(hl::HamiltonianLearner, coeff_list::Union{V
     H .+= 4.0 * coeff_list[ind_op + 7], "Sz", N - 1, "Sy", N
     H .+= 4.0 * coeff_list[ind_op + 8], "Sz", N - 1, "Sz", N
 
+    # BEST
+    # for j in 1:(N - 1)
+    #     H .+= 4.0 * coeff_list[1], "Sz", j, "Sz", j + 1
+    # end
+
+    # for j in 1:(N - 2)
+    #     H .+= 8.0 * coeff_list[2], "Sz", j, "Sx", j + 1, "Sz", j + 2
+    # end
+    # H .+= 4.0 * coeff_list[2], "Sx", 1, "Sz", 2
+    # H .+= 4.0 * coeff_list[2], "Sz", N - 1, "Sx", N
+
+    # ind_op = 3
+
+    # # single Pauli term
+    # for j in 1:N
+    #     H .+= 2.0 * coeff_list[ind_op], "Sx", j
+    # end
+    # ind_op += 1
+
+    # #two-body Pauli terms
+    # for j in 1:(N - 1)
+    #     H .+= 4.0 * coeff_list[ind_op], "Sx", j, "Sx", j + 1
+    #     H .+= 4.0 * coeff_list[ind_op + 1], "Sy", j, "Sy", j + 1
+    #     H .+= 4.0 * coeff_list[ind_op + 2], "Sy", j, "Sz", j + 1
+    #     H .+= 4.0 * coeff_list[ind_op + 3], "Sz", j, "Sy", j + 1
+    # end
+    # ind_op += 4
+    
+    # #three-body Pauli terms
+    # #bulk terms
+    # for j in 1:(N - 2)
+    #     H .+= 8.0 * coeff_list[ind_op], "Sx", j, "Sx", j + 1, "Sx", j + 2
+    #     H .+= 8.0 * coeff_list[ind_op + 1], "Sy", j, "Sx", j + 1, "Sy", j + 2
+    #     H .+= 8.0 * coeff_list[ind_op + 2], "Sy", j, "Sx", j + 1, "Sz", j + 2
+    #     H .+= 8.0 * coeff_list[ind_op + 3], "Sz", j, "Sx", j + 1, "Sy", j + 2
+    # end
+    # ind_op += 4
+
+    # #boundary terms - single Pauli
+    # H .+= 2.0 * coeff_list[ind_op], "Sx", 1
+    # H .+= 2.0 * coeff_list[ind_op + 1], "Sx", N
+    # H .+= 2.0 * coeff_list[ind_op + 2], "Sy", 1
+    # H .+= 2.0 * coeff_list[ind_op + 3], "Sy", N
+    # H .+= 2.0 * coeff_list[ind_op + 4], "Sz", 1
+    # H .+= 2.0 * coeff_list[ind_op + 5], "Sz", N
+    # ind_op += 6
+
+    # #boundary terms - two Paulis
+    # H .+= 4.0 * coeff_list[ind_op], "Sx", 1, "Sx", 2
+    # H .+= 4.0 * coeff_list[ind_op + 1], "Sx", 1, "Sy", 2
+    # H .+= 4.0 * coeff_list[ind_op + 2], "Sx", 1, "Sz", 2
+    # H .+= 4.0 * coeff_list[ind_op + 3], "Sy", 1, "Sx", 2
+    # H .+= 4.0 * coeff_list[ind_op + 4], "Sy", 1, "Sy", 2
+    # H .+= 4.0 * coeff_list[ind_op + 5], "Sy", 1, "Sz", 2
+    # H .+= 4.0 * coeff_list[ind_op + 6], "Sz", 1, "Sx", 2
+    # H .+= 4.0 * coeff_list[ind_op + 7], "Sz", 1, "Sy", 2
+    # H .+= 4.0 * coeff_list[ind_op + 8], "Sz", 1, "Sz", 2
+    # ind_op += 9
+
+    # H .+= 4.0 * coeff_list[ind_op], "Sx", N - 1, "Sx", N
+    # H .+= 4.0 * coeff_list[ind_op + 1], "Sx", N - 1, "Sy", N
+    # H .+= 4.0 * coeff_list[ind_op + 2], "Sx", N - 1, "Sz", N
+    # H .+= 4.0 * coeff_list[ind_op + 3], "Sy", N - 1, "Sx", N
+    # H .+= 4.0 * coeff_list[ind_op + 4], "Sy", N - 1, "Sy", N
+    # H .+= 4.0 * coeff_list[ind_op + 5], "Sy", N - 1, "Sz", N
+    # H .+= 4.0 * coeff_list[ind_op + 6], "Sz", N - 1, "Sx", N
+    # H .+= 4.0 * coeff_list[ind_op + 7], "Sz", N - 1, "Sy", N
+    # H .+= 4.0 * coeff_list[ind_op + 8], "Sz", N - 1, "Sz", N
+
     return H
 end
+    #CODE THAT WORKS
+#     ind_op = 1
+#     #single Pauli term
+#     for j in 1:N
+#         H .+= 2.0 * coeff_list[ind_op], "Sx", j
+#     end
+#     ind_op += 1
+
+#     #two-body Pauli terms
+#     for j in 1:(N - 1)
+#         H .+= 4.0 * coeff_list[ind_op], "Sx", j, "Sx", j + 1
+#         H .+= 4.0 * coeff_list[ind_op + 1], "Sy", j, "Sy", j + 1
+#         H .+= 4.0 * coeff_list[ind_op + 2], "Sz", j, "Sz", j + 1
+#         H .+= 4.0 * coeff_list[ind_op + 3], "Sy", j, "Sz", j + 1
+#         H .+= 4.0 * coeff_list[ind_op + 4], "Sz", j, "Sy", j + 1
+#     end
+#     ind_op += 5
+    
+#     #three-body Pauli terms
+#     #bulk terms
+#     for j in 1:(N - 2)
+#         H .+= 8.0 * coeff_list[ind_op], "Sx", j, "Sx", j + 1, "Sx", j + 2
+#         H .+= 8.0 * coeff_list[ind_op + 1], "Sy", j, "Sx", j + 1, "Sy", j + 2
+#         H .+= 8.0 * coeff_list[ind_op + 2], "Sz", j, "Sx", j + 1, "Sz", j + 2
+#         H .+= 8.0 * coeff_list[ind_op + 3], "Sy", j, "Sx", j + 1, "Sz", j + 2
+#         H .+= 8.0 * coeff_list[ind_op + 4], "Sz", j, "Sx", j + 1, "Sy", j + 2
+#     end
+#     #corresponding boundary terms
+#     # H .+= 4.0 * coeff_list[ind_op], "Sx", 1, "Sx", 2
+#     # H .+= 4.0 * coeff_list[ind_op], "Sx", N - 1, "Sx", N
+#     # H .+= 4.0 * coeff_list[ind_op + 1], "Sx", 1, "Sy", 2
+#     # H .+= 4.0 * coeff_list[ind_op + 1], "Sy", N - 1, "Sx", N
+#     # H .+= 4.0 * coeff_list[ind_op + 2], "Sx", 1, "Sz", 2
+#     # H .+= 4.0 * coeff_list[ind_op + 2], "Sz", N - 1, "Sx", N
+#     # H .+= 4.0 * coeff_list[ind_op + 3], "Sx", 1, "Sz", 2
+#     # H .+= 4.0 * coeff_list[ind_op + 3], "Sy", N - 1, "Sx", N
+#     # H .+= 4.0 * coeff_list[ind_op + 4], "Sx", 1, "Sy", 2
+#     # H .+= 4.0 * coeff_list[ind_op + 4], "Sz", N - 1, "Sx", N
+#     ind_op += 5
+
+#     #boundary terms - single Pauli
+#     H .+= 2.0 * coeff_list[ind_op], "Sx", 1
+#     H .+= 2.0 * coeff_list[ind_op + 1], "Sx", N
+#     H .+= 2.0 * coeff_list[ind_op + 2], "Sy", 1
+#     H .+= 2.0 * coeff_list[ind_op + 3], "Sy", N
+#     H .+= 2.0 * coeff_list[ind_op + 4], "Sz", 1
+#     H .+= 2.0 * coeff_list[ind_op + 5], "Sz", N
+#     ind_op += 6
+
+#     #boundary terms - two Paulis
+#     H .+= 4.0 * coeff_list[ind_op], "Sx", 1, "Sx", 2
+#     H .+= 4.0 * coeff_list[ind_op + 1], "Sx", 1, "Sy", 2
+#     H .+= 4.0 * coeff_list[ind_op + 2], "Sx", 1, "Sz", 2
+#     H .+= 4.0 * coeff_list[ind_op + 3], "Sy", 1, "Sx", 2
+#     H .+= 4.0 * coeff_list[ind_op + 4], "Sy", 1, "Sy", 2
+#     H .+= 4.0 * coeff_list[ind_op + 5], "Sy", 1, "Sz", 2
+#     H .+= 4.0 * coeff_list[ind_op + 6], "Sz", 1, "Sx", 2
+#     H .+= 4.0 * coeff_list[ind_op + 7], "Sz", 1, "Sy", 2
+#     H .+= 4.0 * coeff_list[ind_op + 8], "Sz", 1, "Sz", 2
+#     ind_op += 9
+
+#     H .+= 4.0 * coeff_list[ind_op], "Sx", N - 1, "Sx", N
+#     H .+= 4.0 * coeff_list[ind_op + 1], "Sx", N - 1, "Sy", N
+#     H .+= 4.0 * coeff_list[ind_op + 2], "Sx", N - 1, "Sz", N
+#     H .+= 4.0 * coeff_list[ind_op + 3], "Sy", N - 1, "Sx", N
+#     H .+= 4.0 * coeff_list[ind_op + 4], "Sy", N - 1, "Sy", N
+#     H .+= 4.0 * coeff_list[ind_op + 5], "Sy", N - 1, "Sz", N
+#     H .+= 4.0 * coeff_list[ind_op + 6], "Sz", N - 1, "Sx", N
+#     H .+= 4.0 * coeff_list[ind_op + 7], "Sz", N - 1, "Sy", N
+#     H .+= 4.0 * coeff_list[ind_op + 8], "Sz", N - 1, "Sz", N
+
+#     return H
+# end
 
 function generate_Hamiltonian(hl::HamiltonianLearner, coeff_list::Union{Vector{Float64}, Nothing}=nothing, flag_diag=true)
     if isnothing(coeff_list)
@@ -138,16 +269,31 @@ end
 function find_optimal_eigenvec(V::Vector{Vector{Float64}}, exp_vals::Vector{Float64})
     d = length(V)
 
-    custom_weights = [0.0; 
-                         ones(Float64, 5);#2-Pauli nn
-                         4.0 * ones(Float64, 5); #3-Pauli
-                         10.0 * ones(Float64, 6); #boundary: single Pauli
-                         1000.0 * ones(Float64, 18); #boundary: two Paulis
-                         ] 
-    custom_weights[4] = -100.5  # prefer ZZ
-    custom_weights[9] = -1000.5  # prefer ZXZ
-    custom_weights[20] = -1000.5 # prefer ZXZ
-    custom_weights[33] = -1000.5 # prefer ZXZ
+    custom_weights = [
+            -10.0 * ones(Float64, 2);#ZZ and GHZ terms
+            100.0 * ones(Float64, 28)
+            ]
+
+    # BEST: 
+        # Single Pauli can be removed
+        # YZ and ZY 2-Pauli nn can also go
+        # YXZ and ZXY 3-Pauli terms can also go
+    # custom_weights = [
+    #             -10.0 * ones(Float64, 2);#ZZ and GHZ terms
+    #             100.0 * ones(Float64, 33)
+    #             ]
+
+    # CODE THAT WORKS
+    # custom_weights = [0.0; 
+    #                      ones(Float64, 5);#2-Pauli nn
+    #                      4.0 * ones(Float64, 5); #3-Pauli
+    #                      10.0 * ones(Float64, 6); #boundary: single Pauli
+    #                      1000.0 * ones(Float64, 18); #boundary: two Paulis
+    #                      ] 
+    # custom_weights[4] = -100.5  # prefer ZZ
+    # custom_weights[9] = -1000.5  # prefer ZXZ
+    # custom_weights[20] = -1000.5 # prefer ZXZ
+    # custom_weights[33] = -1000.5 # prefer ZXZ
 
     function get_vec(x)
         v = zero(V[1])
@@ -170,7 +316,7 @@ function find_optimal_eigenvec(V::Vector{Vector{Float64}}, exp_vals::Vector{Floa
 
     function cost_vec_2(x)
         v = get_vec(x)
-        return sum((v .^ 2) .* custom_weights) + 1000.0 * sum(exp_vals .* v)
+        return sum((v .^ 2) .* custom_weights) + 100.0 * sum(exp_vals .* v)
     end
 
     result = optimize(cost_vec_2, x_opt, NelderMead())

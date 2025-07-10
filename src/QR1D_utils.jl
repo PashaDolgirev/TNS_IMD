@@ -1,48 +1,47 @@
-# two-qubit unitary, acting on sites i and i + 1
-# full 15 parameter encoding
-function create_15param_unitary(qr::QuantumResource1D, i::Int64, params::Union{Nothing, Vector{Float64}}=nothing)
-    sites = qr.sites
-    s1 = sites[i]
-    s2 = sites[i+1]
-
-    if isnothing(params)
-        params = copy(qr.θ_vec)
-    end
-
-    if length(params) != 15
+function generate_2qubit_unitary(θ_vec::Vector{Float64})
+    if length(θ_vec) != 15
         @error "Provided circuit parameters don't encode 15 param 2-qubit unitary"
     end
-    
-    # Get Pauli operators for both sites
-    ops1 = pauli_operators(s1)  # [I, σx, σy, σz] for site 1
-    ops2 = pauli_operators(s2)  # [I, σx, σy, σz] for site 2
-    
-    # Initialize the generator of the unitary (Hermitian operator)
-    generator = 0.0 * ops1[1] * ops2[1]#pick custom phase 
-    
+    I, X, Y, Z = [1 0;0 1], [0 1;1 0], [0 -im;im  0], [1 0;0 -1]
+    pauli = Dict(0 => I, 1 => X, 2 => Y, 3 => Z)
+    generator = 0.0 * kron(I, I)#pick custom phase   
     # Two-qubit σᵃ⊗σᵇ terms
     param_idx = 1
-    for a in 2:4, b in 2:4
-        term = ops1[a] * ops2[b]
-        generator += -im * params[param_idx] * term
+    for a in 1:3, b in 1:3
+        term = kron(pauli[a], pauli[b])
+        generator += -im * θ_vec[param_idx] * term
         param_idx += 1
     end
-
     #Single-qubit σᵃ⊗I terms
-    for a in 2:4
-        term = ops1[a] * ops2[1]
-        generator += -im * params[param_idx] * term
+    for a in 1:3
+        term = kron(pauli[a], pauli[0])
+        generator += -im * θ_vec[param_idx] * term
         param_idx += 1
     end
-
     #Single-qubit I⊗σᵇ terms
-    for b in 2:4
-        term = ops1[1] * ops2[b]
-        generator += -im * params[param_idx] * term
+    for b in 1:3
+        term = kron(pauli[0], pauli[b]) 
+        generator += -im * θ_vec[param_idx] * term
         param_idx += 1
     end
-
     return exp(generator)
+end
+
+function TwoQubitUnitary_ITensor_from_matrix(Umat::Matrix{ComplexF64}, s1::Index, s2::Index)
+    @assert size(Umat) == (4, 4) "Matrix must be 4x4 for two qubits"
+
+    s1p = prime(s1)
+    s2p = prime(s2)
+
+    U_tensor = ITensor(s1p, s2p, s1, s2)
+
+    for b1 in 1:2, b2 in 1:2, a1 in 1:2, a2 in 1:2
+        row = 2*(b1 - 1) + b2
+        col = 2*(a1 - 1) + a2
+        U_tensor[s1p => b1, s2p => b2, s1 => a1, s2 => a2] = Umat[row, col]
+    end
+
+    return U_tensor
 end
 
 function ResetState(qr::QuantumResource1D)
@@ -68,13 +67,15 @@ function apply_ladder_circuit(qr::QuantumResource1D,
     end
 
     N = length(qr.sites)
+    U2qubit = generate_2qubit_unitary(params)
+
     for i in 1:(N-1)
-        if circuit == :long_15_param_circuit
-            U = create_15param_unitary(qr, i, params)
-        end
-        psi = apply(U, psi, [i, i+1]; maxdim=2)
+        s1, s2 = siteind(psi, i), siteind(psi, i + 1)
+        U = TwoQubitUnitary_ITensor_from_matrix(U2qubit, s1, s2)
+        psi = apply(U, psi, [i, i+1]; maxdim=Inf)
     end
 
+    psi = truncate(psi; maxdim=2)
     normalize!(psi)
     qr.psi = copy(psi)
     return psi
@@ -174,46 +175,39 @@ function generate_cluster_state(qr::QuantumResource1D)
     return cluster_state, params_cluster, :cluster
 end
 
-function generate_aux_ops(sites::IndexSet)
-    N = length(sites)
-    aux_ops = Vector{MPO}()
+function aux_exp_vals(qr::QuantumResource1D, psi::MPS)
+    # sites = siteinds(psi)  # returns the IndexSet of physical (site) indices
+    # N = length(sites)      # total number of sites
 
-    X_string = ITensor(1)
-    for j in 1:N
-        s = sites[j]
-        X_string *= 2 * op("Sx", s)
-    end
-    X_string_mpo = MPO(X_string, sites)
-    push!(aux_ops, X_string_mpo)
+    # psi_modified = copy(psi)
+    # for j in 1:N
+    #     psi_modified = apply(2 * op("Sx", siteind(psi, j)), psi_modified; site=j)
+    # end
+    # X_expval = inner(psi', psi_modified)
+
+    # psi_modified = copy(psi)
+    # psi_modified = apply(2 * op("Sz", siteind(psi, 1)), psi_modified; site=1)
+    # psi_modified = apply(2 * op("Sy", siteind(psi, 2)), psi_modified; site=2)
+    # for j in 3:N - 2
+    #     psi_modified = apply(2 * op("Sx", siteind(psi, j)), psi_modified; site=j)
+    # end
+    # psi_modified = apply(2 * op("Sy", siteind(psi, N - 1)), psi_modified; site=N-1)
+    # psi_modified = apply(2 * op("Sz", siteind(psi, N)), psi_modified; site=N)
+    # O_expval = (-1)^N * inner(psi', psi_modified)
+
+    # ZZ_term_ev = inner(psi', ZZ_term, psi)
     
-    O_string = ITensor(1)
-    O_string *= 2 * op("Sz", sites[1])
-    O_string *= 2 * op("Sy", sites[2])
-    for j in 3:(N - 2)
-        s = sites[j]
-        O_string *= 2 * op("Sx", s)
-    end
-    O_string *= 2 * op("Sy", sites[N - 1])
-    O_string *= 2 * op("Sz", sites[N])
-    O_string_mpo = MPO(O_string, sites)
-    push!(aux_ops, (-1)^N * O_string_mpo)
-    
-    ZZ_term = AutoMPO()
-    for j in 1:(N-1)
-        ZZ_term .+= 4.0, "Sz", j, "Sz", j + 1
-    end
-    ZZ_term_mpo = MPO(ZZ_term, sites)
-    push!(aux_ops, ZZ_term_mpo)
-    
-    return aux_ops
+    return real(inner(psi', qr.X_string_mpo, psi)), real(inner(psi', qr.O_string_mpo, psi)), real(inner(psi', qr.ZZ_term_mpo, psi))
 end
+
 
 function cost_function(qr::QuantumResource1D, g::Float64, psi::Union{MPS, Nothing}=nothing)
     if isnothing(psi)
         psi = qr.psi
     end
-    return - 0.5 * (1 - g) * real(inner(psi', qr.aux_ops[2], psi)) - 
-           0.5 * (1 + g) * real(inner(psi', qr.aux_ops[3], psi)) / (qr.N - 1)
+
+    _, O_expval, ZZ_term_ev = aux_exp_vals(qr, psi)
+    return - 0.5 * (1 - g) * O_expval - 0.5 * (1 + g) * ZZ_term_ev / (qr.N - 1)
 end
 
 
@@ -228,7 +222,7 @@ function optimize_circuit(qr::QuantumResource1D, g::Float64, θ_in::Union{Vector
         θ_in = 0.01 * rand(15)
     end
     println("Optimizing for g = $g...")
-    result = optimize(objective, θ_in, BFGS(), Optim.Options(iterations=max_iter, show_trace=true))
+    result = optimize(objective, θ_in, BFGS(), Optim.Options(iterations=max_iter, show_trace=false))
 
     opt_params = Optim.minimizer(result)
     return opt_params
@@ -257,7 +251,9 @@ function optimize_circuit_QR(qr::QuantumResource1D, g::Float64, params_prev=noth
     best_params = all_params[min_index]
 
     psi = apply_ladder_circuit(qr, best_params)
-    if abs(real(inner(psi', qr.aux_ops[2], psi))) > 1e-7 #O-string expectation value
+    _, O_expval, _ = aux_exp_vals(qr, psi)
+
+    if abs(O_expval) > 1e-7 #O-string expectation value
         cluster_index = findfirst(==(:cluster), qr.NamesQR)
         if min_index != cluster_index && abs(all_costs[cluster_index] - best_cost) < 1e-7
             best_cost = all_costs[cluster_index]
