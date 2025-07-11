@@ -4,7 +4,7 @@ module CPHL
 using ITensors, ITensorMPS, Optim, LinearAlgebra, Printf, Random
 
 export CPHLSolver, ConstructDesignMatrix, generate_CPHL_op_list,
-        generate_CPHL_Hamiltonian
+        generate_CPHL_Hamiltonian, SetUpHamiltonians
 
 include("basic_MPS_utils.jl")
 include("basic_CPHL_utils.jl")
@@ -41,11 +41,13 @@ mutable struct CPHLSolver
     Ψ_GS_list::Vector{MPS}                  # list of ground states
 
     #various observables of interest
-    Fidelities_vals::Vector{Float64}        
+    Fidelities_vals::Vector{Float64}  
+    E_GS_vals::Vector{Float64}      
     OString_GS_vals::Vector{Float64}
     XString_GS_vals::Vector{Float64}
     ZZ_GS_vals::Vector{Float64}
     Cost_circuit_vals::Vector{Float64}
+    E_circuit_vals::Vector{Float64}
     OString_circuit_vals::Vector{Float64}
     XString_circuit_vals::Vector{Float64}
     ZZ_circuit_vals::Vector{Float64}
@@ -89,11 +91,13 @@ function CPHLSolver(N_sites::Int,
     Hamiltonians = Vector{MPO}(undef, N_g)
     Ψ_GS_list = Vector{MPS}(undef, N_g)
 
-    Fidelities_vals = zeros(Float64, N_g)      
+    Fidelities_vals = zeros(Float64, N_g)   
+    E_GS_vals = zeros(Float64, N_g) 
     OString_GS_vals = zeros(Float64, N_g)
     XString_GS_vals = zeros(Float64, N_g)
     ZZ_GS_vals = zeros(Float64, N_g)
     Cost_circuit_vals = zeros(Float64, N_g)
+    E_circuit_vals = zeros(Float64, N_g)
     OString_circuit_vals = zeros(Float64, N_g)
     XString_circuit_vals = zeros(Float64, N_g)
     ZZ_circuit_vals = zeros(Float64, N_g)
@@ -120,13 +124,18 @@ function CPHLSolver(N_sites::Int,
                         Hamiltonians,
                         Ψ_GS_list,
                         Fidelities_vals,
+                        E_GS_vals,
                         OString_GS_vals,
                         XString_GS_vals,
                         ZZ_GS_vals,
                         Cost_circuit_vals,
+                        E_circuit_vals,
                         OString_circuit_vals,
                         XString_circuit_vals,
                         ZZ_circuit_vals
                         )
 end
+
+include("optimization_CPHL_routines.jl")
+
 end
