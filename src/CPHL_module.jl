@@ -9,7 +9,7 @@ export CPHLSolver, ConstructDesignMatrix, generate_CPHL_op_list,
 include("basic_MPS_utils.jl")
 include("basic_CPHL_utils.jl")
 include("Hamiltonian_CPHL_utils.jl")
-include("")
+include("basic_CPHL_circuit_utils.jl")
 
 mutable struct CPHLSolver
     N_sites::Int
@@ -34,22 +34,21 @@ mutable struct CPHLSolver
     ZZ_term_mpo::MPO
 
     psi0::MPS                               # reference state
-    θ_GHS::Vector{Float64}                  # circuit parameters for the GHZ state
+    θ_GHZ::Vector{Float64}                  # circuit parameters for the GHZ state
     θ_cluster::Vector{Float64}              # circuit parameters for the cluster state
-    # ThetaMat::Matrix{Float64}               # 15xN_g-matrix of all quantum cirquit coefficients 
-    # H_list::Vector{MPO}                     # list of all N_g Hamiltonians
-    # Ψ_GS_list::Vector{MPS}                  # list of ground states
+    ThetaMat::Matrix{Float64}               # 15xN_g-matrix of all quantum cirquit coefficients 
+    Hamiltonians::Vector{MPO}               # list of all N_g Hamiltonians
+    Ψ_GS_list::Vector{MPS}                  # list of ground states
 
-
-    # #various observables of interest
-    # Fidelities_vals::Vector{Float64}        
-    # OString_GS_vals::Vectors{Float64}
-    # XString_GS_vals::Vectors{Float64}
-    # ZZ_GS_vals::Vectors{Float64}
-    # Cost_circuit_vals::Vectors{Float64}
-    # OString_circuit_vals::Vectors{Float64}
-    # XString_circuit_vals::Vectors{Float64}
-    # ZZ_vals::Vectors{Float64}
+    #various observables of interest
+    Fidelities_vals::Vector{Float64}        
+    OString_GS_vals::Vector{Float64}
+    XString_GS_vals::Vector{Float64}
+    ZZ_GS_vals::Vector{Float64}
+    Cost_circuit_vals::Vector{Float64}
+    OString_circuit_vals::Vector{Float64}
+    XString_circuit_vals::Vector{Float64}
+    ZZ_circuit_vals::Vector{Float64}
 end
 
 function CPHLSolver(N_sites::Int, 
@@ -75,7 +74,29 @@ function CPHLSolver(N_sites::Int,
     psi0 = productMPS(sites, "Up") #all in the up-state (|0>)
     h = hadamard(sites[1])#act with Hadamard on the first site
     psi0 = apply(h, psi0, [1])
-    psi0 = normalize(psi0);
+    psi0 = normalize(psi0)
+
+    _, params_GHZ, _ = generate_GHZ_state(psi0)
+    _, params_cluster, _ = generate_cluster_state(psi0)
+
+    ThetaMat = zeros(Float64, 15, N_g)
+
+    for (ind, g) in enumerate(g_vals)
+        θ_vec = 0.5 * (1 + g) * params_GHZ + 0.5 * (1 - g) * params_cluster
+        ThetaMat[:, ind] = θ_vec
+    end
+
+    Hamiltonians = Vector{MPO}(undef, N_g)
+    Ψ_GS_list = Vector{MPS}(undef, N_g)
+
+    Fidelities_vals = zeros(Float64, N_g)      
+    OString_GS_vals = zeros(Float64, N_g)
+    XString_GS_vals = zeros(Float64, N_g)
+    ZZ_GS_vals = zeros(Float64, N_g)
+    Cost_circuit_vals = zeros(Float64, N_g)
+    OString_circuit_vals = zeros(Float64, N_g)
+    XString_circuit_vals = zeros(Float64, N_g)
+    ZZ_circuit_vals = zeros(Float64, N_g)
 
     return CPHLSolver(N_sites, 
                         sites,
@@ -92,7 +113,20 @@ function CPHLSolver(N_sites::Int,
                         OString_mpo,
                         XString_mpo,
                         ZZ_term_mpo,
-                        psi0
+                        psi0,
+                        params_GHZ,
+                        params_cluster,
+                        ThetaMat,
+                        Hamiltonians,
+                        Ψ_GS_list,
+                        Fidelities_vals,
+                        OString_GS_vals,
+                        XString_GS_vals,
+                        ZZ_GS_vals,
+                        Cost_circuit_vals,
+                        OString_circuit_vals,
+                        XString_circuit_vals,
+                        ZZ_circuit_vals
                         )
 end
 end
