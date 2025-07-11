@@ -4,7 +4,7 @@ module CPHL
 using ITensors, ITensorMPS, Optim, LinearAlgebra, Printf, Random
 
 export CPHLSolver, ConstructDesignMatrix, generate_CPHL_op_list,
-        generate_CPHL_Hamiltonian, SetUpHamiltonians
+        generate_CPHL_Hamiltonian, SetUpHamiltonians, OptimizeCPCircuits
 
 include("basic_MPS_utils.jl")
 include("basic_CPHL_utils.jl")
@@ -39,6 +39,7 @@ mutable struct CPHLSolver
     ThetaMat::Matrix{Float64}               # 15xN_g-matrix of all quantum cirquit coefficients 
     Hamiltonians::Vector{MPO}               # list of all N_g Hamiltonians
     Ψ_GS_list::Vector{MPS}                  # list of ground states
+    Ψ_circuit_list::Vector{MPS}             # list of variational ground states
 
     #various observables of interest
     Fidelities_vals::Vector{Float64}  
@@ -90,6 +91,7 @@ function CPHLSolver(N_sites::Int,
 
     Hamiltonians = Vector{MPO}(undef, N_g)
     Ψ_GS_list = Vector{MPS}(undef, N_g)
+    Ψ_circuit_list = Vector{MPS}(undef, N_g)
 
     Fidelities_vals = zeros(Float64, N_g)   
     E_GS_vals = zeros(Float64, N_g) 
@@ -123,6 +125,7 @@ function CPHLSolver(N_sites::Int,
                         ThetaMat,
                         Hamiltonians,
                         Ψ_GS_list,
+                        Ψ_circuit_list,
                         Fidelities_vals,
                         E_GS_vals,
                         OString_GS_vals,

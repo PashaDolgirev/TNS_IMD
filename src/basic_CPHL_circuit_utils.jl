@@ -65,7 +65,7 @@ function optimize_fidelity(
     Psi::MPS,  
     psi0::MPS,
     initial_params::Union{Nothing, Vector{Float64}}=nothing,
-    max_iter=1000
+    max_iter=500
     )
 
     Random.seed!(123)
