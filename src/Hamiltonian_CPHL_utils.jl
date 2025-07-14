@@ -27,6 +27,8 @@ function generate_CPHL_op_list(sites::IndexSet)
     push!(op_list, MPO(op_YY_nnn, sites))
     push!(op_list, MPO(op_ZZ_nnn, sites))
 
+
+
     return op_list
 end
 
@@ -58,6 +60,24 @@ function generate_CPHL_Hamiltonian(g::Float64, coeff_list::Vector{Float64}, site
         H .+= 4.0 * coeff_list[ind_op + 4], "Sz", j, "Sz", j + 2
     end
     ind_op += 5
+
+    return MPO(H, sites)
+end
+
+function generate_CPHL_H0(g::Float64, sites::IndexSet)
+    
+    N = length(sites)
+    H = AutoMPO()
+
+    for j in 1:(N - 1)
+        H .+= -2.0 * (1 + g), "Sz", j, "Sz", j + 1
+    end
+
+    for j in 1:(N - 2)
+        H .+= -4.0 * (1 - g), "Sz", j, "Sx", j + 1, "Sz", j + 2
+    end
+    H .+= -2.0 * (1 - g), "Sx", 1, "Sz", 2
+    H .+= -2.0 * (1 - g), "Sz", N - 1, "Sx", N
 
     return MPO(H, sites)
 end

@@ -53,7 +53,7 @@ function apply_ladder_circuit(θ_vec::Vector{Float64}, psi0::MPS)
     for i in 1:(N - 1)
         s1, s2 = siteind(psi, i), siteind(psi, i + 1)
         U = TwoQubitUnitary_ITensor_from_matrix(U2qubit, s1, s2)
-        psi = apply(U, psi, [i, i+1]; maxdim=Inf)
+        psi = apply(U, psi, [i, i+1]; maxdim=2)
     end
 
     psi = truncate(psi; maxdim=2)
