@@ -21,7 +21,6 @@ function generate_custom_Hamiltonian(hl::HamiltonianLearner, coeff_list::Union{V
 
     ind_op = 3
 
-
     #two-body Pauli terms
     for j in 1:(N - 1)
         H .+= 4.0 * coeff_list[ind_op], "Sx", j, "Sx", j + 1

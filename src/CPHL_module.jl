@@ -31,6 +31,8 @@ mutable struct CPHLSolver
     CMat::Matrix{Float64}                   # matrix of coefficients CMat_{j, a} = c_a(g_j)
 
     OStringWeight::Float64                  # enters the circuit optimization cost function
+    OrgWeight::Float64                      # introduced for convergence reasons
+
     OString_mpo::MPO
     XString_mpo::MPO
     ZZ_term_mpo::MPO
@@ -75,6 +77,7 @@ function CPHLSolver(N_sites::Int,
     g_vals::Vector{Float64}, 
     OStringWeight::Float64=0.0,
     M_max::Int=3)
+    OrgWeight = OStringWeight
     Random.seed!(1234)
 
     sites = siteinds("S=1/2", N_sites)
@@ -156,6 +159,7 @@ function CPHLSolver(N_sites::Int,
                         ALPHAMat,
                         CMat,
                         OStringWeight,
+                        OrgWeight,
                         OString_mpo,
                         XString_mpo,
                         ZZ_term_mpo,

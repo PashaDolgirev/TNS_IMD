@@ -37,10 +37,10 @@ function CollectAuxHL(cphl::CPHLSolver)
 end
 
 
-function GenerateUpdCMat(cphl::CPHLSolver, α::Float64=0.01)
+function GenerateUpdCMat(cphl::CPHLSolver, α::Float64=1e-4)
     CollectAuxHL(cphl)
 
-    custom_weights = 0.25 * [1.0; 1.0; 1.0; 1.0; 0.5]
+    custom_weights = 5.0 * [1.0; 1.0; 1.0; 1.0; 0.5]
     CMat_upd = zeros(Float64, cphl.N_g, cphl.N_op)
     for ind_g in 1:cphl.N_g
         G_g, e_g, v_g = copy(cphl.GMat_list[ind_g]), copy(cphl.exp_val_list[ind_g]), copy(cphl.v_vec_list[ind_g])
@@ -52,23 +52,32 @@ function GenerateUpdCMat(cphl::CPHLSolver, α::Float64=0.01)
 end
 
 
-function LearnHarmonics(cphl::CPHLSolver, delta_step::Float64=0.5, Max_iter::Int=10, tol::Float64=1e-4)
+function LearnHarmonics(cphl::CPHLSolver, delta_step::Float64=0.2, Max_iter::Int=20, tol::Float64=1e-2, β::Float64=0.2)
+    λ_min = 0.01
+    cphl.OStringWeight = copy(cphl.OrgWeight)
     for iter in 1:Max_iter
         C_mat_upd = GenerateUpdCMat(cphl)
         AlphaMat_upd = EstimateHarmFromCMat(C_mat_upd, cphl.HarmFromVecMat)
         current_error = norm( AlphaMat_upd - cphl.ALPHAMat)
-        println("Current error = $(current_error)")
+        println("Current error = $(current_error); λ weight = $(cphl.OStringWeight)")
 
         cphl.ALPHAMat = (1 - delta_step) * cphl.ALPHAMat + delta_step * AlphaMat_upd
         cphl.CMat = GenerateCMatFromALPHAMat(cphl.ALPHAMat, cphl.DesignMat)
 
-        SetUpHamiltonians(cphl)
-        OptimizeCPDMRG(cphl)
-        
         if current_error < tol
             cphl.flag_convegence = true
             println("Converged in $(iter) iterations")
             break
         end
+        if cphl.OStringWeight < λ_min
+            cphl.OStringWeight = 0.0 
+        else
+            cphl.OStringWeight = copy(cphl.OrgWeight) / (1 + β * iter)
+        end
+        
+        SetUpHamiltonians(cphl)
+        OptimizeCPDMRG(cphl)
     end
+    cphl.OrgWeight = copy(cphl.OStringWeight)
+    println("Updated coefficients")
 end
