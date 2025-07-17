@@ -40,7 +40,9 @@ end
 function GenerateUpdCMat(cphl::CPHLSolver, α::Float64=1e-4)
     CollectAuxHL(cphl)
 
-    custom_weights = 5.0 * [1.0; 1.0; 1.0; 1.0; 0.5]
+    custom_weights = 3.0 * [1.0; 1.0; 1.0; 1.0; 0.5;
+                            2.0; 2.0; 
+                            3.0; 2.5; 3.0; 3.0; 3.0; 3.0; 3.0; 3.0; 3.0]
     CMat_upd = zeros(Float64, cphl.N_g, cphl.N_op)
     for ind_g in 1:cphl.N_g
         G_g, e_g, v_g = copy(cphl.GMat_list[ind_g]), copy(cphl.exp_val_list[ind_g]), copy(cphl.v_vec_list[ind_g])
