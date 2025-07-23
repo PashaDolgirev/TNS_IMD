@@ -26,23 +26,25 @@ function generate_CPHL_CorrMat(psi::MPS, op_list::Vector{MPO}, H0::MPO)
     return G_mat, exp_vals, v_vec
 end
 
-function CollectAuxHL(cphl::CPHLSolver)
+function CollectAuxHL(cphl::CPHLSolver, verbose=false)
     for ind_g in 1:cphl.N_g
-        G_g, e_g, v_g = generate_CPHL_CorrMat(cphl.ψ_opt_list[ind_g], cphl.op_list, cphl.H0_list[ind_g])
+        #G_g, e_g, v_g = generate_CPHL_CorrMat(cphl.ψ_opt_list[ind_g], cphl.op_list, cphl.H0_list[ind_g])
+        G_g, e_g, v_g = generate_CPHL_CorrMat(cphl.ψ_opt_list[ind_g], cphl.op_list, cphl.Hamiltonians[ind_g])
         cphl.GMat_list[ind_g] = G_g
         cphl.exp_val_list[ind_g] = e_g
         cphl.v_vec_list[ind_g] = v_g
     end
-    # println("Successful collection of auxilary elements for HL")
+    if verbose
+        println("Successful collection of auxilary elements for HL")
+    end 
 end
 
-
-function GenerateUpdCMat(cphl::CPHLSolver, α::Float64=1e-4)
+function GenerateUpdCMat(cphl::CPHLSolver, α::Float64=0.0)
     CollectAuxHL(cphl)
 
-    custom_weights = 3.0 * [1.0; 1.0; 1.0; 1.0; 0.5;
-                            2.0; 2.0; 
-                            3.0; 2.5; 3.0; 3.0; 3.0; 3.0; 3.0; 3.0; 3.0]
+    custom_weights = 5.0 * [2.0; 2.0; 2.0; 2.0; 2.0;
+                            4.0; 4.0; 
+                            8.0; 8.0; 8.0; 8.0; 8.0; 8.0; 8.0; 8.0; 8.0]
     CMat_upd = zeros(Float64, cphl.N_g, cphl.N_op)
     for ind_g in 1:cphl.N_g
         G_g, e_g, v_g = copy(cphl.GMat_list[ind_g]), copy(cphl.exp_val_list[ind_g]), copy(cphl.v_vec_list[ind_g])
@@ -54,28 +56,54 @@ function GenerateUpdCMat(cphl::CPHLSolver, α::Float64=1e-4)
 end
 
 
-function LearnHarmonics(cphl::CPHLSolver, delta_step::Float64=0.2, Max_iter::Int=20, tol::Float64=1e-2, β::Float64=0.2)
+function LearnHarmonics(cphl::CPHLSolver, Max_iter::Int=10, tol::Float64=1e-3, β::Float64=0.2)
     λ_min = 0.01
     cphl.OStringWeight = copy(cphl.OrgWeight)
+    cphl.delta_step = copy(cphl.org_delta_step)
+
     for iter in 1:Max_iter
+        # C_mat_upd = GenerateUpdCMat(cphl)
+        # AlphaMat_upd = EstimateHarmFromCMat(C_mat_upd, cphl.HarmFromVecMat)
+        # current_error = norm( AlphaMat_upd - cphl.ALPHAMat)
+
         C_mat_upd = GenerateUpdCMat(cphl)
         AlphaMat_upd = EstimateHarmFromCMat(C_mat_upd, cphl.HarmFromVecMat)
-        current_error = norm( AlphaMat_upd - cphl.ALPHAMat)
-        println("Current error = $(current_error); λ weight = $(cphl.OStringWeight)")
+        current_error = norm(AlphaMat_upd)
+        
 
-        cphl.ALPHAMat = (1 - delta_step) * cphl.ALPHAMat + delta_step * AlphaMat_upd
+        # cphl.ALPHAMat = (1 - delta_step) * cphl.ALPHAMat + delta_step * AlphaMat_upd
+        cphl.ALPHAMat = cphl.ALPHAMat + cphl.delta_step * AlphaMat_upd
         cphl.CMat = GenerateCMatFromALPHAMat(cphl.ALPHAMat, cphl.DesignMat)
 
-        if current_error < tol
-            cphl.flag_convegence = true
+        max_val = maximum(abs, cphl.CMat)
+        println("Current error = $(current_error); λ weight = $(cphl.OStringWeight); δ step = $(cphl.delta_step); max|C| = $(max_val)")
+
+        if current_error > cphl.alg_error
+            cphl.org_delta_step = cphl.org_delta_step / 1.2
+            cphl.delta_step = cphl.delta_step / 1.2
+        end
+        cphl.alg_error = copy(current_error)
+
+        if (current_error < tol) || (cphl.delta_step < 0.005)
+            cphl.flag_convergence = true
             println("Converged in $(iter) iterations")
             break
         end
+
+        if max_val > 0.3
+            cphl.org_delta_step = cphl.org_delta_step / 1.5
+            cphl.delta_step = cphl.delta_step / 1.5
+            cphl.OStringWeight = cphl.OStringWeight / 1.5
+            cphl.OrgWeight = cphl.OrgWeight / 1.5
+        end
+
         if cphl.OStringWeight < λ_min
             cphl.OStringWeight = 0.0 
         else
             cphl.OStringWeight = copy(cphl.OrgWeight) / (1 + β * iter)
         end
+
+
         
         SetUpHamiltonians(cphl)
         OptimizeCPDMRG(cphl)

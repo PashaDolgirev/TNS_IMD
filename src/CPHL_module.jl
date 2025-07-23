@@ -31,7 +31,10 @@ mutable struct CPHLSolver
     CMat::Matrix{Float64}                   # matrix of coefficients CMat_{j, a} = c_a(g_j)
 
     OStringWeight::Float64                  # enters the circuit optimization cost function
-    OrgWeight::Float64                      # introduced for convergence reasons
+    OrgWeight::Float64                      # the weight prior the algorithm started, introduced for convergence
+    delta_step::Float64                     # update weight for harmonics 
+    org_delta_step::Float64                 # the weight prior the algorithm started, introduced for convergence
+    alg_error::Float64                      # current error of the cphl algorithm
 
     OString_mpo::MPO
     XString_mpo::MPO
@@ -69,16 +72,21 @@ mutable struct CPHLSolver
     exp_val_list::Vector{Vector{Float64}}   # all corresponding N_g exp values of op_list
     v_vec_list::Vector{Vector{Float64}}     # aux vector
 
-    flag_convegence::Bool 
+    flag_convergence::Bool 
 
 end
 
 function CPHLSolver(N_sites::Int, 
     g_vals::Vector{Float64}, 
-    OStringWeight::Float64=0.0,
+    OStringWeight::Float64=1.0,
     M_max::Int=3)
-    OrgWeight = OStringWeight
+    OrgWeight = copy(OStringWeight)
     Random.seed!(1234)
+
+    delta_step = 0.35
+    org_delta_step = 0.35
+
+    alg_error = 1e3
 
     sites = siteinds("S=1/2", N_sites)
     N_g = length(g_vals)
@@ -145,7 +153,7 @@ function CPHLSolver(N_sites::Int,
     exp_val_list = Vector{Vector{Float64}}(undef, N_g)
     v_vec_list = Vector{Vector{Float64}}(undef, N_g)
 
-    flag_convegence = false
+    flag_convergence = false
 
     return CPHLSolver(N_sites, 
                         sites,
@@ -160,6 +168,9 @@ function CPHLSolver(N_sites::Int,
                         CMat,
                         OStringWeight,
                         OrgWeight,
+                        delta_step,
+                        org_delta_step,
+                        alg_error,
                         OString_mpo,
                         XString_mpo,
                         ZZ_term_mpo,
@@ -189,7 +200,7 @@ function CPHLSolver(N_sites::Int,
                         GMat_list,
                         exp_val_list,
                         v_vec_list,
-                        flag_convegence
+                        flag_convergence
                         )
 end
 

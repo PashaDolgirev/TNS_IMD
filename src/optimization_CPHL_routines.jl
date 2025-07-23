@@ -26,7 +26,9 @@ function SetUpHamiltonians(cphl::CPHLSolver, verbose=false)
             flush(stdout)
         end
     end
-    # println("Successful pass, generated Hamiltonians and GSs")
+    if verbose
+        println("Successful pass, generated Hamiltonians and GSs")
+    end
 end
 
 function OptimizeCPDMRG(cphl::CPHLSolver, verbose=false)
@@ -52,8 +54,9 @@ function OptimizeCPDMRG(cphl::CPHLSolver, verbose=false)
             flush(stdout)
         end
     end
-
-    # println("Successful pass, optimized the cost function")
+    if verbose
+        println("Successful pass, optimized the cost function")
+    end
 end
 
 function cost_function(psi::MPS, OStringWeight::Float64, H::MPO, OString_mpo::MPO)
