@@ -4,7 +4,7 @@ set(0,'DefaultTextFontSize',24,'DefaultTextFontName','Arial');
 
 %% 
 
-N = 5; %choose between [5, 10, 20]
+N = 20; %choose between [5, 10, 20]
 
 
 bare = load(['bare_data_' num2str(N) '.txt']);
@@ -91,6 +91,8 @@ ax.LineWidth = 2;
 % ax.FontWeight = 'normal';
 set(gca, 'FontName', 'Arial')
 
+
+writematrix(w, ['bar_vals_' num2str(N) '.txt'])
 
 %%
 
