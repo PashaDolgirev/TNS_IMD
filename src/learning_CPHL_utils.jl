@@ -103,8 +103,6 @@ function LearnHarmonics(cphl::CPHLSolver, Max_iter::Int=10, tol::Float64=1e-3, Î
             cphl.OStringWeight = copy(cphl.OrgWeight) / (1 + Î² * iter)
         end
 
-
-        
         SetUpHamiltonians(cphl)
         OptimizeCPDMRG(cphl)
     end
