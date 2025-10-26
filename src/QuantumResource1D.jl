@@ -6,7 +6,7 @@ using ITensors, ITensorMPS, Optim, LinearAlgebra, Printf, Random
 
 export QuantumResource1D, generate_2qubit_unitary, apply_ladder_circuit,
         AddQR, generate_GHZ_state, aux_exp_vals,
-        cost_function, optimize_circuit, optimize_circuit_QR
+        cost_function, optimize_circuit, optimize_circuit_QR, optimize_fidelity
 
 mutable struct QuantumResource1D
     N::Int64                        #number of qubits
