@@ -83,7 +83,7 @@ ylabel('Expectation vals','Interpreter','latex')
 title(['Number of spins = ' num2str(N)])
 l = legend('fidelity with GS bare', 'fidelity with GS optimized');
 set(l,'Interpreter','latex')
-ylim([0 1])
+ylim([0.84 1])
 xlim([-1 1])
 box on
 ax = gca;
