@@ -4,7 +4,7 @@ set(0,'DefaultTextFontSize',24,'DefaultTextFontName','Arial');
 
 %% 
 
-N = 5; %choose between [5, 10, 20]
+N = 20; %choose between [5, 10, 20]
 
 
 bare = load(['bare_data_' num2str(N) '.txt']);
@@ -23,7 +23,7 @@ N_g = 50;
 g_vals = linspace(-1, 1, N_g + 2);
 g_vals = g_vals(2:end-1);
 
-
+%%
 figure('Position', [10 10 1100 600])
 hold on
 plot(bare(:, 1), bare(:, 2),'-','LineWidth',3,'Color',[116,173,209]/255,'MarkerSize',8)
@@ -34,7 +34,7 @@ plot(g_vals, circuit_opt_O,'--d','LineWidth',1,'Color',[165,0,38]/255,'MarkerSiz
 xlabel('$g$','Interpreter','latex')
 ylabel('Expectation vals','Interpreter','latex')
 title(['Number of spins = ' num2str(N)])
-l = legend('DMRG bare', 'DMRG optimized', 'circuit bare', 'circuit optimized');
+l = legend('DMRG bare CIM', 'DMRG upon CPHL', 'circuit bare CIM', 'circuit upon CPHL');
 set(l,'Interpreter','latex')
 ylim([0 1])
 xlim([-1 1])
@@ -48,6 +48,7 @@ ax.LineWidth = 2;
 % ax.FontWeight = 'normal';
 set(gca, 'FontName', 'Arial')
 
+%%
 
 figure('Position', [10 10 1100 600])
 hold on
@@ -58,7 +59,7 @@ plot(g_vals, circuit_opt_ZZ / (N - 1),'--d','LineWidth',1,'Color',[165,0,38]/255
 xlabel('$g$','Interpreter','latex')
 ylabel('Expectation vals','Interpreter','latex')
 title(['Number of spins = ' num2str(N)])
-l = legend('DMRG bare', 'DMRG optimized', 'circuit bare', 'circuit optimized');
+l = legend('DMRG bare CIM', 'DMRG upon CPHL', 'circuit bare CIM', 'circuit upon CPHL');
 set(l,'Interpreter','latex')
 ylim([0 1])
 xlim([-1 1])
@@ -73,6 +74,7 @@ ax.LineWidth = 2;
 set(gca, 'FontName', 'Arial')
 
 
+%%
 
 figure('Position', [10 10 1100 600])
 hold on
@@ -81,9 +83,9 @@ plot(g_vals, fidelity_opt,'--d','LineWidth',1,'Color',[165,0,38]/255,'MarkerSize
 xlabel('$g$','Interpreter','latex')
 ylabel('Expectation vals','Interpreter','latex')
 title(['Number of spins = ' num2str(N)])
-l = legend('fidelity with GS bare', 'fidelity with GS optimized');
+l = legend('fidelity with GS bare CIM', 'fidelity with GS upon CPHL');
 set(l,'Interpreter','latex')
-ylim([0.84 1])
+ylim([0.75 1])
 xlim([-1 1])
 box on
 ax = gca;
